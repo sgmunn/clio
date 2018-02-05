@@ -1,4 +1,5 @@
-﻿using clio.Model;
+﻿using System;
+using clio.Model;
 
 namespace clio.Providers.Issues
 {
@@ -19,18 +20,28 @@ namespace clio.Providers.Issues
 		public VstsIssue (int issueId, VisualStudioBug bug)
 		{
 			Id = issueId;
-			Title = bug.Fields ["System.Title"];
-			MoreInfo = $"{bug.Fields["System.AreaPath"]} - {bug.Fields["Microsoft.DevDiv.Milestone"]} {bug.Fields["System.State"]}";
-			TargetMilestone = bug.Fields["Microsoft.DevDiv.Milestone"];
-			Status = bug.Fields["System.State"];
-			Importance = bug.Fields["Microsoft.VSTS.Common.Priority"];
+			Title = GetValue (bug, "System.Title");
+			MoreInfo = $"{GetValue (bug, "System.AreaPath")} - {GetValue (bug, "Microsoft.DevDiv.Milestone")} {GetValue (bug, "System.State")}";
+			TargetMilestone = GetValue (bug, "Microsoft.DevDiv.Milestone");
+			Status = GetValue (bug, "System.State");
+			Importance = GetValue (bug, "Microsoft.VSTS.Common.Priority");
 
 			// TODO: is UserStory the correct or only workitem type we want to call an enhancement?
-			IsEnhancement = bug.Fields["System.WorkItemType"] == "UserStory";
+			IsEnhancement = GetValue (bug, "System.WorkItemType") == "UserStory";
 			IssueUrl = $"https://devdiv.visualstudio.com/DevDiv/_workitems/edit/{this.Id}";
 
 			// TODO: is "closed" the only status to define a bug / work item as closed?
 			IsClosed = this.Status == "Closed";
+		}
+
+		static string GetValue(VisualStudioBug bug, string name) 
+		{
+			if (bug.Fields.ContainsKey (name)) {
+				return bug.Fields[name];
+			}
+
+			Explain.Print ($"{name} was not a field in VSTS bug {bug.Id}");
+			return string.Empty;
 		}
 	}
 }
